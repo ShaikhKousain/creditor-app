@@ -7,7 +7,21 @@ import customersRouter from "./routes/customers"
 import authRouter from "./routes/auth"
 
 const app = express()
-app.use(cors({ origin: /^http:\/\/localhost:\d+$/, credentials: true }))
+const localhost = /^http:\/\/localhost:\d+$/
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || localhost.test(origin) || origin === process.env.FRONTEND_URL) {
+        callback(null, true)
+      } else {
+        callback(new Error("Not allowed by CORS"))
+      }
+    },
+    credentials: true,
+  })
+)
+
 app.use(express.json())
 app.use(cookieParser())
 

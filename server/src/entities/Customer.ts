@@ -5,17 +5,17 @@ import { User } from "./User"
 @Entity()
 export class Customer {
   @PrimaryGeneratedColumn()
-  id: number
+  id!: number
 
   @Column({ type: "varchar" })
-  name: string
+  name!: string
 
   @Column({ type: "varchar", nullable: true })
-  phone: string
+  phone!: string
 
   @ManyToOne(() => User, (user) => user.customers)
-  user: User
+  user!: User
 
   @OneToMany(() => Transaction, (transaction) => transaction.customer)
-  transactions: Transaction[]
+  transactions!: Transaction[]
 }

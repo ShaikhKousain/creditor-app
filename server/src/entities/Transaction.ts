@@ -4,20 +4,20 @@ import { Customer } from "./Customer"
 @Entity()
 export class Transaction {
   @PrimaryGeneratedColumn()
-  id: number
+  id!: number
 
   @Column({ type: "decimal", precision: 10, scale: 2 })
-  amount: number
+  amount!: number
 
   @Column({ type: "varchar" })
-  type: "credit" | "debit"
+  type!: "credit" | "debit"
 
   @Column({ type: "varchar", nullable: true })
-  note: string
+  note!: string
 
   @CreateDateColumn()
-  createdAt: Date
+  createdAt!: Date
 
   @ManyToOne(() => Customer, (customer) => customer.transactions)
-  customer: Customer
+  customer!: Customer
 }
