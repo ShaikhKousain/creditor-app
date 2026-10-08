@@ -1,9 +1,10 @@
 import { useState } from "react"
-import { useNavigate } from "react-router"
+import { Link, useNavigate } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/AuthContext"
+
 
 export function Login() {
   const [phone, setPhone] = useState("")
@@ -45,7 +46,7 @@ export function Login() {
         <Button type="submit" className="w-full">Log in</Button>
       </form>
       <p className="text-sm text-muted-foreground">
-        No account? <a href="/register" className="underline">Register</a>
+        No account? <Link to="/register" className="underline">Register</Link>
       </p>
     </div>
   )

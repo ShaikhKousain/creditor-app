@@ -1,9 +1,19 @@
-import { Routes, Route } from "react-router"
+import { Navigate, Routes, Route } from "react-router"
 import { CustomerList } from "@/pages/CustomerList"
 import { CustomerDetail } from "@/pages/CustomerDetail"
 import { Login } from "@/pages/Login"
 import { Register } from "@/pages/Register"
 import { useAuth } from "@/AuthContext"
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
+  return user === null ? <Navigate to="/login" replace /> : children
+}
+
+function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
+  return user ? <Navigate to="/" replace /> : children
+}
 
 function App() {
   const { loading } = useAuth()
@@ -14,10 +24,10 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<CustomerList />} />
-      <Route path="/customers/:id" element={<CustomerDetail />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/" element={<ProtectedRoute><CustomerList /></ProtectedRoute>} />
+      <Route path="/customers/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
+      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+      <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
     </Routes>
   )
 }

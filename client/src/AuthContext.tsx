@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { login as apiLogin, register as apiRegister } from "@/api"
+import { API_URL, login as apiLogin, register as apiRegister } from "@/api"
 
 type User = { id: string; phone: string; name: string }
 
@@ -18,7 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("http://localhost:4000/auth/me", { credentials: "include" })
+    fetch(`${API_URL}/auth/me`, { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error("Not logged in")
         return res.json()
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function logout() {
     setUser(null)
-    fetch("http://localhost:4000/auth/logout", { method: "POST", credentials: "include" })
+    fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" })
   }
 
   return (
