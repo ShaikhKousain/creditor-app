@@ -4,18 +4,22 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/AuthContext"
+import { isValidPhoneNumber, PHONE_VALIDATION_MESSAGE, sanitizePhoneInput } from "@/lib/phone"
 
 
 export function Login() {
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [phoneTouched, setPhoneTouched] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
+    setPhoneTouched(true)
+    if (!isValidPhoneNumber(phone)) return
     try {
       await login(phone, password)
       navigate("/")
@@ -29,8 +33,21 @@ export function Login() {
       <h1 className="text-2xl font-bold">Log in</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+          <Label htmlFor="phone">Mobile</Label>
+          <Input
+            id="phone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            value={phone}
+            onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
+            onBlur={() => setPhoneTouched(true)}
+            aria-invalid={phoneTouched && !isValidPhoneNumber(phone)}
+            required
+          />
+          {phoneTouched && !isValidPhoneNumber(phone) && (
+            <p className="text-sm text-red-600">{PHONE_VALIDATION_MESSAGE}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>

@@ -12,6 +12,7 @@ import { getCustomers, getMyLedgers, type Customer, type MyLedgerSummary } from 
 import { useAuth } from "@/AuthContext"
 import { AddCustomerDialog } from "@/components/AddCustomerDialog"
 import { Button } from "@/components/ui/button"
+import { hasAutoOpenedCustomerLedger, markCustomerLedgerAutoOpened } from "@/lib/customerLaunch"
 
 type MainTab = "ledger" | "more"
 type LedgerTab = "shop" | "customer" | "my-ledger"
@@ -108,34 +109,40 @@ export function CustomerList() {
     Promise.all([getCustomers(), getMyLedgers()])
       .then(([customerResult, ledgerResult]) => {
         if (cancelled) return
+
+        if (
+          location.pathname === "/" &&
+          !hasAutoOpenedCustomerLedger() &&
+          customerResult.length === 0 &&
+          ledgerResult.length === 1
+        ) {
+          markCustomerLedgerAutoOpened()
+          navigate(`/my-ledger/${ledgerResult[0].id}`, {
+            state: { homeView: "customer" },
+          })
+          return
+        }
+
         setCustomers(customerResult)
         setMyLedgers(ledgerResult)
+        setLoading(false)
       })
       .catch(() => {
-        if (!cancelled) setError("Could not load ledger data")
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          setError("Could not load ledger data")
+          setLoading(false)
+        }
       })
 
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [location.pathname, navigate])
 
   const customerOnly = !loading && customers.length === 0 && myLedgers.length > 0
   const linkedCustomers = customers.filter((customer) => customer.linked)
   const netBalance = customers.reduce((sum, customer) => sum + Math.max(0, Number(customer.balance)), 0)
   const totalIowe = myLedgers.reduce((sum, ledger) => sum + Number(ledger.balance), 0)
-
-  useEffect(() => {
-    if (!loading && customers.length === 0 && myLedgers.length === 1 && homeView !== "customer") {
-      navigate(`/my-ledger/${myLedgers[0].id}`, {
-        replace: true,
-        state: { homeView: "customer" },
-      })
-    }
-  }, [customers.length, homeView, loading, myLedgers, navigate])
 
   function refreshCustomers() {
     Promise.all([getCustomers(), getMyLedgers()])

@@ -183,7 +183,12 @@ router.post("/", async (req: AuthRequest, res) => {
     return res.status(400).json({ error: "name is required" })
   }
 
-  const normalizedPhone = typeof phone === "string" ? normalizePhone(phone) : ""
+  const hasPhone = phone !== undefined && phone !== null && phone !== ""
+  if (hasPhone && (typeof phone !== "string" || !/^\d{10}$/.test(phone))) {
+    return res.status(400).json({ error: "Phone number must be exactly 10 digits" })
+  }
+
+  const normalizedPhone = hasPhone ? normalizePhone(phone) : ""
   const linkedUser = normalizedPhone
     ? await AppDataSource.getRepository(User)
         .createQueryBuilder("user")

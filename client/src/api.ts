@@ -50,7 +50,7 @@ export async function getCustomers(): Promise<Customer[]> {
   return res.json()
 }
 
-export async function addCustomer(name: string, phone: string): Promise<Customer> {
+export async function addCustomer(name: string, phone: string | null): Promise<Customer> {
   const res = await fetch(`${API_URL}/customers`, {
     method: "POST",
     credentials: "include",

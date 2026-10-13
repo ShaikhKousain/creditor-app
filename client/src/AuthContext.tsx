@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { API_URL, login as apiLogin, register as apiRegister } from "@/api"
+import { resetCustomerLedgerAutoOpen } from "@/lib/customerLaunch"
 
 type User = { id: string; phone: string; name: string }
 
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(phone: string, password: string) {
     const user = await apiLogin(phone, password)
+    resetCustomerLedgerAutoOpen()
     setUser(user)
   }
 
@@ -39,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
+    resetCustomerLedgerAutoOpen()
     setUser(null)
     fetch(`${API_URL}/auth/logout`, { method: "POST", credentials: "include" })
   }

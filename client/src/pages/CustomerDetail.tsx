@@ -39,7 +39,7 @@ export function CustomerDetail() {
         </div>
         <div className="min-w-0 flex-1">
           <h1 className="truncate font-semibold leading-tight">{customer.name}</h1>
-          <p className="truncate text-sm text-muted-foreground">{customer.phone || "No phone number"}</p>
+          {customer.phone && <p className="truncate text-sm text-muted-foreground">{customer.phone}</p>}
         </div>
         {customer.phone ? (
           <a

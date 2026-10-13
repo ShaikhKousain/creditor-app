@@ -20,6 +20,13 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "phone, password, and name are required" })
     }
 
+    if (typeof phone !== "string" || !/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ message: "Phone number must be exactly 10 digits" })
+    }
+    if (typeof password !== "string" || password.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" })
+    }
+
     const normalizedPhone = normalizePhone(phone)
     if (!normalizedPhone) {
       return res.status(400).json({ message: "phone must contain digits" })
@@ -71,6 +78,10 @@ export const login = async (req: Request, res: Response) => {
 
     if (!phone || !password) {
       return res.status(400).json({ message: "phone and password are required" })
+    }
+
+    if (typeof phone !== "string" || !/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ message: "Phone number must be exactly 10 digits" })
     }
 
     const normalizedPhone = normalizePhone(phone)
