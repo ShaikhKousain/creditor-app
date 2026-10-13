@@ -12,6 +12,9 @@ export class Transaction {
   @Column({ type: "varchar" })
   type!: "credit" | "debit"
 
+  @Column({ type: "enum", enum: ["shop", "customer"], default: "shop" })
+  side!: "shop" | "customer"
+
   @Column({ type: "varchar", nullable: true })
   note!: string
 

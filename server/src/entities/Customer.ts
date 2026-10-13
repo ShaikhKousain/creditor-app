@@ -11,7 +11,10 @@ export class Customer {
   name!: string
 
   @Column({ type: "varchar", nullable: true })
-  phone!: string
+  phone!: string | null
+
+  @Column({ type: "uuid", nullable: true })
+  linkedUserId!: string | null
 
   @ManyToOne(() => User, (user) => user.customers)
   user!: User

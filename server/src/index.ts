@@ -4,6 +4,7 @@ import cors from "cors"
 import cookieParser from "cookie-parser"
 import { AppDataSource } from "./data-source"
 import customersRouter from "./routes/customers"
+import { myLedgersRouter } from "./routes/customers"
 import authRouter from "./routes/auth"
 
 const app = express()
@@ -31,6 +32,7 @@ app.get("/health", (req, res) => {
 
 app.use("/auth", authRouter)
 app.use("/customers", customersRouter)
+app.use(myLedgersRouter)
 
 AppDataSource.initialize()
   .then(() => {

@@ -8,6 +8,7 @@ import path from 'node:path'
 
    export default defineConfig({
      plugins: [
+
        react(),
        tailwindcss(),
        VitePWA({
@@ -28,11 +29,21 @@ import path from 'node:path'
              { src: "maskable-icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
            ],
          },
+        
          workbox: {
            navigateFallbackDenylist: [/^\/api/],
          },
        }),
      ],
+     preview: {
+       proxy: {
+         "/api": {
+           target: "http://localhost:4000",
+           changeOrigin: true,
+           rewrite: (path) => path.replace(/^\/api/, ""),
+         },
+       },
+     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
