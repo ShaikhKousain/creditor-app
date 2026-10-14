@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from "react"
-import { useParams, Link } from "react-router"
-import { ArrowLeft, Phone, ArrowDown, ArrowUp } from "lucide-react"
-import { getCustomer, type Customer, type Transaction } from "@/api"
+import { useNavigate, useParams, Link } from "react-router"
+import { ArrowLeft, Phone, ArrowDown, ArrowUp, MoreVertical } from "lucide-react"
+import { deleteTransaction, getCustomer, type Customer, type Transaction } from "@/api"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { EditCustomerDialog } from "@/components/EditCustomerDialog"
 import { LedgerBubbles } from "@/components/LedgerBubbles"
 
 export function CustomerDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [customer, setCustomer] = useState<(Customer & { transactions: Transaction[] }) | null>(null)
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const [customerMenuOpen, setCustomerMenuOpen] = useState(false)
+  const [editCustomerOpen, setEditCustomerOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [requestError, setRequestError] = useState("")
   const transactionListRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -18,6 +26,29 @@ export function CustomerDetail() {
     const transactionList = transactionListRef.current
     if (transactionList) transactionList.scrollTop = transactionList.scrollHeight
   }, [customer?.transactions])
+
+  async function refreshCustomer() {
+    if (!id) return
+    setCustomer(await getCustomer(Number(id)))
+  }
+
+  async function handleDeleteTransaction() {
+    if (!customer || !selectedTransaction) return
+    const amount = Number(selectedTransaction.amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })
+    if (!window.confirm(`Delete this ₹${amount} entry? This can't be undone.`)) return
+
+    setDeleting(true)
+    setRequestError("")
+    try {
+      await deleteTransaction(customer.id, selectedTransaction.id)
+      setSelectedTransaction(null)
+      await refreshCustomer()
+    } catch (error) {
+      setRequestError(error instanceof Error ? error.message : "Could not delete transaction")
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   if (!customer) return <div className="p-6">Loading...</div>
 
@@ -49,18 +80,30 @@ export function CustomerDetail() {
           >
             <Phone aria-hidden="true" className="size-5" />
           </a>
-        ) : (
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground" aria-label="No phone number">
-            <Phone aria-hidden="true" className="size-5" />
-          </span>
-        )}
+        ) : null}
+        <button
+          type="button"
+          aria-label="Customer options"
+          onClick={() => {
+            setRequestError("")
+            setCustomerMenuOpen(true)
+          }}
+          className="flex size-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <MoreVertical aria-hidden="true" className="size-5" />
+        </button>
       </header>
 
       <main ref={transactionListRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+        {requestError && <p role="alert" className="mb-3 text-sm text-red-700">{requestError}</p>}
         <LedgerBubbles
           transactions={customer.transactions}
           labels={{ debit: "Given", credit: "Received" }}
           editable
+          onTransactionClick={(transaction) => {
+            setRequestError("")
+            setSelectedTransaction(transaction)
+          }}
         />
       </main>
 
@@ -104,6 +147,71 @@ export function CustomerDetail() {
           </Button>
         </div>
       </footer>
+
+      <Dialog
+        open={Boolean(selectedTransaction) || customerMenuOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedTransaction(null)
+            setCustomerMenuOpen(false)
+            setRequestError("")
+          }
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          className="fixed inset-x-0 top-auto bottom-0 left-0 mx-auto w-full max-w-[460px] translate-x-0 translate-y-0 rounded-b-none rounded-t-2xl p-5"
+        >
+          <DialogHeader>
+            <DialogTitle>{customerMenuOpen ? "Customer options" : "Entry options"}</DialogTitle>
+          </DialogHeader>
+          {requestError && <p role="alert" className="text-sm text-red-700">{requestError}</p>}
+          {customerMenuOpen ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-14 w-full justify-start text-base"
+              onClick={() => {
+                setCustomerMenuOpen(false)
+                setEditCustomerOpen(true)
+              }}
+            >
+              Edit customer
+            </Button>
+          ) : selectedTransaction ? (
+            <div className="grid gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-14 w-full justify-start text-base"
+                onClick={() => navigate(`/customers/${customer.id}/transactions/${selectedTransaction.id}/edit`)}
+              >
+                Edit
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                className="min-h-14 w-full justify-start text-base"
+                disabled={deleting}
+                onClick={handleDeleteTransaction}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <EditCustomerDialog
+        customer={customer}
+        open={editCustomerOpen}
+        onOpenChange={setEditCustomerOpen}
+        onSaved={() => {
+          refreshCustomer().catch((error) => {
+            setRequestError(error instanceof Error ? error.message : "Could not refresh customer")
+          })
+        }}
+      />
     </div>
   )
 }

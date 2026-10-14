@@ -32,6 +32,7 @@ function App() {
       <Route path="/customers/:id/customer-side" element={<ProtectedRoute><CustomerSideDetail /></ProtectedRoute>} />
       <Route path="/my-ledger/:id" element={<ProtectedRoute><MyLedgerDetail /></ProtectedRoute>} />
       <Route path="/customers/:id/entry/:type" element={<ProtectedRoute><LedgerEntry mode="shop" /></ProtectedRoute>} />
+      <Route path="/customers/:id/transactions/:txId/edit" element={<ProtectedRoute><LedgerEntry mode="shop" editTransaction /></ProtectedRoute>} />
       <Route path="/my-ledger/:id/entry/:type" element={<ProtectedRoute><LedgerEntry mode="customer" /></ProtectedRoute>} />
       <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
       <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />

@@ -209,6 +209,49 @@ router.post("/", async (req: AuthRequest, res) => {
   return res.status(201).json(customer)
 })
 
+router.patch("/:id", async (req: AuthRequest, res) => {
+  const customerRepo = AppDataSource.getRepository(Customer)
+  const customer = await customerRepo.findOne({
+    where: { id: Number(req.params.id), user: { id: req.user!.userId } },
+  })
+  if (!customer) {
+    return res.status(404).json({ error: "Customer not found" })
+  }
+
+  const { name, phone } = req.body
+  if (typeof name !== "string" || !name.trim()) {
+    return res.status(400).json({ error: "name is required" })
+  }
+  if (phone !== undefined && phone !== null && phone !== "" && (typeof phone !== "string" || !/^\d{10}$/.test(phone))) {
+    return res.status(400).json({ error: "Phone number must be exactly 10 digits" })
+  }
+  if (customer.linkedUserId && phone !== undefined) {
+    const requestedPhone = phone === null || phone === "" ? null : normalizePhone(phone)
+    const storedPhone = customer.phone ? normalizePhone(customer.phone) : null
+    if (requestedPhone !== storedPhone) {
+      return res.status(400).json({ error: "This customer has a linked account, so the number can't be changed" })
+    }
+  }
+
+  customer.name = name.trim()
+  if (!customer.linkedUserId && phone !== undefined) {
+    const normalizedPhone = phone ? normalizePhone(phone) : ""
+    const linkedUser = normalizedPhone
+      ? await AppDataSource.getRepository(User)
+          .createQueryBuilder("user")
+          .where("RIGHT(regexp_replace(user.phone, '[^0-9]', '', 'g'), 10) = :phone", { phone: normalizedPhone })
+          .andWhere("user.id != :callerId", { callerId: req.user!.userId })
+          .getOne()
+      : null
+
+    customer.phone = normalizedPhone || null
+    customer.linkedUserId = linkedUser?.id ?? null
+  }
+
+  await customerRepo.save(customer)
+  return res.json(customer)
+})
+
 router.get("/:id/customer-side", async (req: AuthRequest, res) => {
   const customer = await AppDataSource.getRepository(Customer).findOne({
     where: { id: Number(req.params.id), user: { id: req.user!.userId } },
@@ -297,13 +340,17 @@ router.patch("/:id/transactions/:txId", async (req: AuthRequest, res) => {
   }
 
   const { amount, type, note } = req.body
-  if (amount !== undefined) transaction.amount = amount
-  if (type !== undefined) {
-    if (type !== "credit" && type !== "debit") {
-      return res.status(400).json({ error: "type must be 'credit' or 'debit'" })
-    }
-    transaction.type = type
+  const numericAmount = Number(amount)
+  if (amount === undefined || !Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return res.status(400).json({ error: "amount must be greater than 0" })
   }
+  if (type !== undefined && type !== transaction.type) {
+    return res.status(400).json({ error: "Transaction type cannot be changed" })
+  }
+  if (note !== undefined && note !== null && typeof note !== "string") {
+    return res.status(400).json({ error: "note must be a string" })
+  }
+  transaction.amount = numericAmount
   if (note !== undefined) transaction.note = note
 
   await transactionRepo.save(transaction)

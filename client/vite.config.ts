@@ -18,8 +18,8 @@ import path from 'node:path'
            name: "Creditor",
            short_name: "Creditor",
            description: "Customer credit and debit ledger",
-           theme_color: "#111827",
-           background_color: "#ffffff",
+           theme_color: "#042f2e",
+           background_color: "#042f2e",
            display: "standalone",
            start_url: "/",
            icons: [

@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 import { ArrowLeft, Delete, FileText } from "lucide-react"
-import { addMyLedgerTransaction, addTransaction, getCustomer, getMyLedger, getMyLedgers, type Transaction } from "@/api"
+import {
+  addMyLedgerTransaction,
+  addTransaction,
+  getCustomer,
+  getMyLedger,
+  getMyLedgers,
+  updateTransaction,
+  type Transaction,
+} from "@/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -80,14 +88,15 @@ function isEntryRouteType(type: string | undefined): type is EntryRouteType {
   return type === "received" || type === "given" || type === "paid" || type === "took"
 }
 
-export function LedgerEntry({ mode }: { mode: EntryMode }) {
-  const { id, type: routeType } = useParams()
+export function LedgerEntry({ mode, editTransaction = false }: { mode: EntryMode; editTransaction?: boolean }) {
+  const { id, type: routeType, txId } = useParams()
   const navigate = useNavigate()
   const ledgerId = Number(id)
   const noteInputRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState("")
   const [balance, setBalance] = useState(0)
   const [expression, setExpression] = useState("")
+  const [entryType, setEntryType] = useState<Transaction["type"]>("debit")
   const [note, setNote] = useState("")
   const [notesOpen, setNotesOpen] = useState(false)
   const [noteFocused, setNoteFocused] = useState(false)
@@ -95,8 +104,14 @@ export function LedgerEntry({ mode }: { mode: EntryMode }) {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
 
-  const validType = isEntryRouteType(routeType)
-  const transactionType = validType ? getTransactionType(routeType) : "debit"
+  const validType = editTransaction
+    ? mode === "shop" && Number.isInteger(Number(txId)) && Number(txId) > 0
+    : isEntryRouteType(routeType)
+  const transactionType = editTransaction
+    ? entryType
+    : validType
+      ? getTransactionType(routeType as EntryRouteType)
+      : "debit"
   const isIncrease = transactionType === "debit"
   const actionLabel = mode === "customer"
     ? isIncrease ? "Took" : "Paid"
@@ -117,20 +132,35 @@ export function LedgerEntry({ mode }: { mode: EntryMode }) {
       return
     }
 
-    const loadLedger = mode === "customer"
-      ? Promise.all([getMyLedgers(), getMyLedger(ledgerId)])
-          .then(([ledgers, detail]) => {
-            const ledger = ledgers.find((item) => item.id === ledgerId)
-            if (!ledger) throw new Error("Ledger not found")
-            return { name: ledger.shopkeeperName, balance: detail.balance }
-          })
-      : getCustomer(ledgerId).then((customer) => ({ name: customer.name, balance: customer.balance }))
+    const loadLedger = editTransaction
+      ? getCustomer(ledgerId).then((customer) => {
+          const transaction = customer.transactions.find((item) => item.id === Number(txId))
+          if (!transaction) throw new Error("Transaction not found")
+          return { name: customer.name, balance: customer.balance, transaction }
+        })
+      : mode === "customer"
+        ? Promise.all([getMyLedgers(), getMyLedger(ledgerId)])
+            .then(([ledgers, detail]) => {
+              const ledger = ledgers.find((item) => item.id === ledgerId)
+              if (!ledger) throw new Error("Ledger not found")
+              return { name: ledger.shopkeeperName, balance: detail.balance, transaction: null }
+            })
+        : getCustomer(ledgerId).then((customer) => ({
+            name: customer.name,
+            balance: customer.balance,
+            transaction: null,
+          }))
 
     loadLedger
       .then((details) => {
         if (cancelled) return
         setName(details.name)
         setBalance(Number(details.balance))
+        if (details.transaction) {
+          setEntryType(details.transaction.type)
+          setExpression(formatLiteral(Number(details.transaction.amount)))
+          setNote(details.transaction.note ?? "")
+        }
         setError("")
       })
       .catch(() => {
@@ -143,7 +173,7 @@ export function LedgerEntry({ mode }: { mode: EntryMode }) {
     return () => {
       cancelled = true
     }
-  }, [id, ledgerId, mode, validType])
+  }, [editTransaction, id, ledgerId, mode, txId, validType])
 
   function appendDigit(digit: string) {
     setError("")
@@ -197,14 +227,17 @@ export function LedgerEntry({ mode }: { mode: EntryMode }) {
     setSaving(true)
     setError("")
     try {
-      if (mode === "customer") {
+      if (editTransaction) {
+        await updateTransaction(ledgerId, Number(txId), evaluatedAmount, note)
+      } else if (mode === "customer") {
         await addMyLedgerTransaction(ledgerId, evaluatedAmount, transactionType, note)
       } else {
         await addTransaction(ledgerId, evaluatedAmount, transactionType, note)
       }
       navigate(-1)
-    } catch {
-      setError("Could not save entry. Your amount and note are still here.")
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : "Could not save entry"
+      setError(`${message}. Your amount and note are still here.`)
       setSaving(false)
     }
   }
@@ -295,7 +328,7 @@ export function LedgerEntry({ mode }: { mode: EntryMode }) {
           onClick={confirmEntry}
           className={`mb-3 h-14 w-full text-base font-semibold disabled:bg-muted disabled:text-muted-foreground ${confirmClass}`}
         >
-          {saving ? "Saving..." : `Confirm ${actionLabel}`}
+          {saving ? "Saving..." : editTransaction ? "Save changes" : `Confirm ${actionLabel}`}
         </Button>
 
         {!noteFocused && (

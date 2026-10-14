@@ -30,6 +30,10 @@ export function Login() {
 
   return (
     <div className="max-w-sm mx-auto p-6 mt-12 space-y-4">
+      <div className="flex flex-col items-center gap-2 pb-2">
+        <img src="/icon.svg" alt="Creditor" className="size-14 rounded-xl" />
+        <span className="text-sm font-semibold">Creditor</span>
+      </div>
       <h1 className="text-2xl font-bold">Log in</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">

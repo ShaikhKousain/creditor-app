@@ -61,6 +61,26 @@ export async function addCustomer(name: string, phone: string | null): Promise<C
   return res.json()
 }
 
+async function throwApiError(res: Response, fallback: string): Promise<never> {
+  const body = await res.json().catch(() => null)
+  throw new Error(body?.error ?? body?.message ?? fallback)
+}
+
+export async function updateCustomer(
+  customerId: number,
+  name: string,
+  phone: string | null
+): Promise<Customer> {
+  const res = await fetch(`${API_URL}/customers/${customerId}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, phone }),
+  })
+  if (!res.ok) return throwApiError(res, "Failed to update customer")
+  return res.json()
+}
+
 export async function getCustomer(id: number): Promise<Customer & { transactions: Transaction[] }> {
   const res = await fetch(`${API_URL}/customers/${id}`, {
     credentials: "include",
@@ -83,6 +103,30 @@ export async function addTransaction(
   })
   if (!res.ok) throw new Error("Failed to add transaction")
   return res.json()
+}
+
+export async function updateTransaction(
+  customerId: number,
+  transactionId: number,
+  amount: number,
+  note: string
+): Promise<Transaction> {
+  const res = await fetch(`${API_URL}/customers/${customerId}/transactions/${transactionId}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ amount, note }),
+  })
+  if (!res.ok) return throwApiError(res, "Failed to update transaction")
+  return res.json()
+}
+
+export async function deleteTransaction(customerId: number, transactionId: number): Promise<void> {
+  const res = await fetch(`${API_URL}/customers/${customerId}/transactions/${transactionId}`, {
+    method: "DELETE",
+    credentials: "include",
+  })
+  if (!res.ok) return throwApiError(res, "Failed to delete transaction")
 }
 
 export async function login(phone: string, password: string): Promise<{ id: string; phone: string; name: string }> {
