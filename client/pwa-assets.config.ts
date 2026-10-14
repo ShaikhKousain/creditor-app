@@ -8,5 +8,5 @@ const preset = {
 
 export default defineConfig({
   preset,
-  images: ["public/icon.svg"],
+  images: ["public/icons.svg"],
 })

@@ -33,7 +33,7 @@ export function Register() {
   return (
     <div className="max-w-sm mx-auto p-6 mt-12 space-y-4">
       <div className="flex flex-col items-center gap-2 pb-2">
-        <img src="/icon.svg" alt="Creditor" className="size-14 rounded-xl" />
+        <img src="/icons.svg" alt="Creditor" className="size-14 rounded-xl" />
         <span className="text-sm font-semibold">Creditor</span>
       </div>
       <h1 className="text-2xl font-bold">Create account</h1>
